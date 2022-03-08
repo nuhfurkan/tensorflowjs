@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@2.0.0/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div>
+        x: <input type="number" name="" id="x">
+        y: <input type="number" name="" id="y">
+        <input type="button" id="append" value="submit">
+    </div>
+    <div style="padding: 50px; width: 800px; height: 400px;">
+        <canvas id="myChart" width="300" height="200"></canvas>
+    </div>
+
+    <script>
+        xs = [];
+        ys = [];
+
+        document.getElementById("x").value = 1;
+        
+        const model = tf.sequential();
+        model.add(tf.layers.dense({units:128, inputShape:[1]}));
+        model.add(tf.layers.dense({units:128, inputShape:[128], actication: "sigmoid"}));
+        model.add(tf.layers.dense({units:1, inputShape:[128]}));
+        model.compile({loss: "meanSquaredError", optimizer: "adam"});
+
+
+        var ctx = document.getElementById("myChart").getContext('2d');
+        var myChart = new Chart(ctx, {
+                type: 'line',
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                },
+
+                data: {
+                    labels: [],
+                    datasets: []
+                },
+            });
+
+        document.getElementById("append").onclick = function(){            
+            var x = document.getElementById("x").value;
+            var y = document.getElementById("y").value;
+            xs.push(parseFloat(x));
+            ys.push(parseFloat(y));
+            var bestfit = []
+            myChart.data.datasets.pop();
+            myChart.data.datasets.pop();
+
+            myChart.data.labels.push(x);
+
+
+
+            model.fit(tf.tensor(xs), tf.tensor(ys), {epochs:150}).then(() => {
+                bestfit = model.predict(tf.tensor(xs, [xs.length, 1])).dataSync();
+                console.log(bestfit);
+
+                myChart.data.datasets.push({
+                    label: "best fit",
+                    data: bestfit,
+                    borderWidth: 2,
+                    borderColor: "blue",
+                });
+
+                myChart.data.datasets.push({
+                    label: "y values",
+                    data: ys,
+                    borderWidth: 2,
+                    borderColor: "red",
+                });
+                myChart.update();
+            });
+
+            document.getElementById('x').value = parseInt(x)+1;
+        }
+
+        
+
+    </script>
+</body>
+</html>
